@@ -3,6 +3,7 @@ import base64
 
 import requests
 from dotenv import load_dotenv
+from app.models.listing import Listing
 
 load_dotenv()
 
@@ -22,7 +23,7 @@ def get_access_token() -> str:
     }
 
     # Body
-    data = {
+    payload = {
         "grant_type": "client_credentials",
         "scope": "https://api.ebay.com/oauth/api_scope",
     }
@@ -31,7 +32,7 @@ def get_access_token() -> str:
     response = requests.post(
         "https://api.ebay.com/identity/v1/oauth2/token",
         headers=headers,
-        data=data,
+        data=payload,
     )
 
     response.raise_for_status() # error check
@@ -39,7 +40,7 @@ def get_access_token() -> str:
     token = response.json()["access_token"]
     return token
 
-def search_listings(query: str) -> dict:
+def search_listings(query: str) -> list[Listing]:
     token = get_access_token()
     headers = {
         "Authorization": f"Bearer {token}"
@@ -58,5 +59,49 @@ def search_listings(query: str) -> dict:
 
     response.raise_for_status()
 
-    return response.json()
+    response_json = response.json()
+    listings = []
+
+    for item in response_json.get("itemSummaries", []):
+        listings.append(normalize_listing(item))
+
+    return listings
+
+def normalize_listing(eBay_json_raw_listing: dict) -> Listing:
+    raw_listing = eBay_json_raw_listing
+
+    listing_id = raw_listing["itemId"]
+    title = raw_listing["title"]
+    price = float(raw_listing["price"]["value"])
+    currency = raw_listing["price"]["currency"]
+    listing_url = raw_listing["itemWebUrl"]
+
+    thumbnail_image_url = raw_listing["image"]["imageUrl"]
+    additional_image_urls = []
+
+    for image in raw_listing.get("additionalImages", []):
+        additional_image_urls.append(image["imageUrl"])
+
+    seller_username = raw_listing["seller"]["username"]
+    seller_feedback_percent = float(raw_listing["seller"]["feedbackPercentage"])
+    seller_feedback_score = raw_listing["seller"]["feedbackScore"]
+
+    condition = raw_listing["condition"]
+    created_at = raw_listing["itemCreationDate"]
+
+    return Listing(
+        platform="ebay",
+        listing_id=listing_id,
+        title=title,
+        price=price,
+        currency=currency,
+        listing_url=listing_url,
+        thumbnail_image_url=thumbnail_image_url,
+        additional_image_urls=additional_image_urls,
+        seller_username=seller_username,
+        seller_feedback_percent=seller_feedback_percent,
+        seller_feedback_score=seller_feedback_score,
+        condition=condition,
+        created_at=created_at,
+    )
 
