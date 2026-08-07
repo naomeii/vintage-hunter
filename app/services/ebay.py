@@ -4,6 +4,7 @@ import base64
 import requests
 from dotenv import load_dotenv
 from app.models.listing import Listing
+from app.models.search import Search
 
 load_dotenv()
 
@@ -40,14 +41,18 @@ def get_access_token() -> str:
     token = response.json()["access_token"]
     return token
 
-def search_listings(query: str) -> list[Listing]:
+# Public facing API / interface
+def search(search: Search) -> list[Listing]:
+    return _search_ebay(search)
+
+def _search_ebay(search: Search) -> list[Listing]:
     token = get_access_token()
     headers = {
         "Authorization": f"Bearer {token}"
     }
 
     params = {
-        "q": query,
+        "q": search.query,
         "limit": 5
     }
 
@@ -63,12 +68,12 @@ def search_listings(query: str) -> list[Listing]:
     listings = []
 
     for item in response_json.get("itemSummaries", []):
-        listings.append(normalize_listing(item))
+        listings.append(_normalize_ebay_listing(item))
 
     return listings
 
-def normalize_listing(eBay_json_raw_listing: dict) -> Listing:
-    raw_listing = eBay_json_raw_listing
+def _normalize_ebay_listing(ebay_json_raw_listing: dict) -> Listing:
+    raw_listing = ebay_json_raw_listing
 
     listing_id = raw_listing["itemId"]
     title = raw_listing["title"]

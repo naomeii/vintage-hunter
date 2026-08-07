@@ -1,9 +1,17 @@
-from app.services.ebay import search_listings
+from app.services.ebay import search
+from app.models.search import Search, Condition
 from app.models.listing import Listing
 
 
-def test_search_listings_returns_listings():
-    listings = search_listings("balenciaga city small")
+def test_search_returns_listings():
+    listings = search(
+        Search(
+            id=None,
+            query="balenciaga city small",
+            max_price=None,
+            condition=Condition.ANY,
+        )
+    )
 
     # Verify we got a list
     assert isinstance(listings, list)
