@@ -1,8 +1,7 @@
 import sqlite3
 from app.models.search import Search, Condition
 from app.models.listing import Listing
-
-DATABASE_PATH = "data/vintage_hunter.db"
+from app.config import DATABASE_PATH
 
 def initialize_database():
     with sqlite3.connect(DATABASE_PATH) as connection:

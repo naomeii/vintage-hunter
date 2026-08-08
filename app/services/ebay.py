@@ -4,7 +4,7 @@ import base64
 import requests
 from dotenv import load_dotenv
 from app.models.listing import Listing
-from app.models.search import Search
+from app.models.search import Search, Condition
 
 load_dotenv()
 
@@ -51,10 +51,25 @@ def _search_ebay(search: Search) -> list[Listing]:
         "Authorization": f"Bearer {token}"
     }
 
+    # params to search in ebay
     params = {
         "q": search.query,
         "limit": 5
     }
+
+    filters = []
+
+    if search.max_price is not None:
+        filters.append(f"price:[..{search.max_price}]")
+
+    if search.condition == Condition.NEW:
+        filters.append("conditions:{NEW}")
+
+    elif search.condition == Condition.USED:
+        filters.append("conditions:{USED}")
+
+    if filters:
+        params["filter"] = ",".join(filters)
 
     response = requests.get(
         "https://api.ebay.com/buy/browse/v1/item_summary/search",
