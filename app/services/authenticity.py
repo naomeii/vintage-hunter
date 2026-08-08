@@ -27,6 +27,22 @@ with open(AUTHENTICITY_PROMPT_PATH) as file:
 #     return response.output_text
 
 def analyze_listing(listing: Listing) -> AuthenticityResult:
+    content = _build_listing_content(listing)
+
+    response = client.responses.create(
+        model=MODEL,
+        instructions=authenticity_prompt,
+        input=[
+            {
+                "role": "user",
+                "content": content,
+            }
+        ],
+    )
+
+    return response.output_text
+
+def _build_listing_content(listing: Listing) -> list[dict]:
     listing_information = f"""
         Title: {listing.title}
 
@@ -38,18 +54,28 @@ def analyze_listing(listing: Listing) -> AuthenticityResult:
 
         Listing URL:
         {listing.listing_url}
-
-        Thumbnail:
-        {listing.thumbnail_image_url}
-
-        Additional Images:
-        {'\n'.join(listing.additional_image_urls)}
     """
 
-    response = client.responses.create(
-        model=MODEL,
-        instructions=authenticity_prompt,
-        input=listing_information,
-    )
+    # Add thumbnail image
+    content = [
+        {
+            "type": "input_text",
+            "text": listing_information,
+        },
+        {
+            "type": "input_image",
+            "image_url": listing.thumbnail_image_url,
+        },
+    ]
 
-    return response.output_text
+    # Add rest of images except thumbnail again
+    for image_url in listing.additional_image_urls:
+        if image_url != listing.thumbnail_image_url:
+            content.append(
+                {
+                    "type": "input_image",
+                    "image_url": image_url,
+                }
+            )
+
+    return content
