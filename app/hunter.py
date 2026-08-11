@@ -4,22 +4,8 @@ from app.services.database import (
     has_seen_listing,
     mark_listing_seen,
 )
-
-
-# def run_hunter():
-#     searches = get_saved_searches()
-
-#     for search in searches:
-#         listings = ebay.search(search)
-
-#         for listing in listings:
-#             if has_seen_listing(listing):
-#                 continue
-
-#             mark_listing_seen(listing)
-
-#             # AI authenticity
-#             # Send SMS
+from app.services.authenticity import analyze_listing
+from app.services.email import send_listing_notification
 
 def run_hunter():
     searches = get_saved_searches()
@@ -37,5 +23,11 @@ def run_hunter():
                 continue
 
             print(f"NEW: {listing.title}")
+
+            result = analyze_listing(listing)
+
+            print(result)
+
+            send_listing_notification(listing, result)
 
             mark_listing_seen(listing)
