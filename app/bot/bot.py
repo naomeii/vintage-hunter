@@ -1,26 +1,11 @@
-import discord
+import asyncio
 
-from app.config import (
-    DISCORD_BOT_TOKEN,
-    DISCORD_USER_ID,
-)
-
-intents = discord.Intents.default()
-
-client = discord.Client(intents=intents)
+from app.services.discord import DiscordService
 
 
-@client.event
-async def on_ready():
-    print(f"Logged in as {client.user}!")
-
-    user = await client.fetch_user(DISCORD_USER_ID)
-
-    await user.send(
-        "₍^. .^₎Ⳋ Vintage Hunter is online!"
-    )
-
-    await client.close()
+async def main():
+    discord = DiscordService()
+    await discord.start()
 
 
-client.run(DISCORD_BOT_TOKEN)
+asyncio.run(main())

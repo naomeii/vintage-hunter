@@ -1,41 +1,91 @@
-import requests
+# used to expose methods like send_listing_notification()
+import discord
 
-from app.config import DISCORD_WEBHOOK_URL
+from app.config import DISCORD_BOT_TOKEN, DISCORD_USER_ID
 from app.models.listing import Listing
-from app.models.authenticity_result import (
-    AuthenticityResult,
-    Recommendation,
-)
-from app.services.notification import build_notification
+from app.models.authenticity_result import AuthenticityResult, Recommendation
 
 
-def send_listing_notification(
+class DiscordService:
+
+    def __init__(self):
+        intents = discord.Intents.default()
+
+        self.client = discord.Client(intents=intents)
+
+        @self.client.event
+        async def on_ready():
+            print(f"Logged in as {self.client.user}!")
+
+    async def login(self):
+        await self.client.login(DISCORD_BOT_TOKEN)
+
+    async def start(self):
+        await self.client.start(DISCORD_BOT_TOKEN)
+
+    async def close(self):
+        await self.client.close()
+
+    async def send_message(self, message: str):
+        user = await self.client.fetch_user(DISCORD_USER_ID)
+        await user.send(message)
+
+    async def send_listing_notification(
+    self,
     listing: Listing,
     result: AuthenticityResult,
-):
-    if result.recommendation == Recommendation.BUY:
-        color = 0x57F287  # Green
+    ):
+        if result.recommendation == Recommendation.BUY:
+            color = 0x57F287
+            greeting = "₍^. .^₎Ⳋ I found something!"
+            verdict = "♡ BUY ♡"
 
-    elif result.recommendation == Recommendation.INVESTIGATE:
-        color = 0xFEE75C  # Yellow
+        elif result.recommendation == Recommendation.INVESTIGATE:
+            color = 0xFEE75C
+            greeting = "( •̀ᴗ•́ )و Worth a closer look!"
+            verdict = "❀ INVESTIGATE ❀"
 
-    else:
-        color = 0xED4245  # Red
+        else:
+            color = 0xED4245
+            greeting = "૮ • ﻌ • ა I'd pass on this one."
+            verdict = "✕ AVOID ✕"
 
-    payload = {
-        "embeds": [
-            {
-                "title": listing.title,
-                "description": build_notification(listing, result),
-                "url": listing.listing_url,
-                "color": color,
-                "thumbnail": {
-                    "url": listing.thumbnail_image_url,
-                },
-            }
-        ]
-    }
+        embed = discord.Embed(
+            title=listing.title,
+            url=listing.listing_url,
+            description=greeting,
+            color=color,
+        )
 
-    response = requests.post(DISCORD_WEBHOOK_URL, json=payload)
+        embed.add_field(
+            name="୨୧ Verdict",
+            value=f"{verdict} • {result.confidence:.0%}",
+            inline=False,
+        )
 
-    response.raise_for_status()
+        embed.add_field(
+            name="୨୧ Price",
+            value=f"${listing.price:,.2f} {listing.currency}",
+            inline=False,
+        )
+
+        embed.add_field(
+            name="୨୧ Seller",
+            value=(
+                f"{listing.seller_username} • "
+                f"{listing.seller_feedback_percent:.1f}% "
+                f"({listing.seller_feedback_score:,})"
+            ),
+            inline=False,
+        )
+
+        embed.add_field(
+            name="୨୧ Thoughts",
+            value=result.explanation,
+            inline=False,
+        )
+
+        embed.set_thumbnail(url=listing.thumbnail_image_url)
+
+        user = await self.client.fetch_user(DISCORD_USER_ID)
+        await user.send(embed=embed)
