@@ -5,17 +5,26 @@ from app.services.database import (
     mark_listing_seen,
 )
 from app.services.authenticity import analyze_listing
-from app.services.email import send_listing_notification
+from app.services.discord import DiscordService
 
-def run_hunter():
+
+async def run_hunter(discord_service: DiscordService):
     searches = get_saved_searches()
 
     for search in searches:
         print(f"Searching: {search.query}")
 
-        listings = ebay.search(search)
+        try:
+            listings = ebay.search(search)
 
-        print(f"Found {len(listings)} listings.")
+            print(f"Found {len(listings)} listings.")
+
+        except Exception as error:
+            print(
+                f"✕ Search failed for "
+                f"'{search.query}': {error}"
+            )
+            continue
 
         for listing in listings:
             if has_seen_listing(listing):
@@ -24,10 +33,25 @@ def run_hunter():
 
             print(f"NEW: {listing.title}")
 
-            result = analyze_listing(listing)
+            try:
+                result = analyze_listing(listing)
 
-            print(result)
+                print(result)
 
-            send_listing_notification(listing, result)
+                # waiting to send new notifications
+                await discord_service.send_listing_notification(
+                    listing,
+                    result,
+                )
 
-            mark_listing_seen(listing)
+                mark_listing_seen(listing)
+
+                print(f"✓ Notified: {listing.title}")
+
+            except Exception as error:
+                print(
+                    f"✕ Failed to process "
+                    f"'{listing.title}': {error}"
+                )
+
+                continue

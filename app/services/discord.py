@@ -31,9 +31,9 @@ class DiscordService:
         await user.send(message)
 
     async def send_listing_notification(
-    self,
-    listing: Listing,
-    result: AuthenticityResult,
+        self,
+        listing: Listing,
+        result: AuthenticityResult,
     ):
         if result.recommendation == Recommendation.BUY:
             color = 0x57F287
@@ -80,12 +80,38 @@ class DiscordService:
         )
 
         embed.add_field(
+            name="୨୧ Condition",
+            value=listing.condition,
+            inline=False,
+        )
+
+        embed.add_field(
             name="୨୧ Thoughts",
             value=result.explanation,
             inline=False,
         )
 
-        embed.set_thumbnail(url=listing.thumbnail_image_url)
+        image_url = self._get_best_image_url(listing)
+
+        if image_url:
+            embed.set_image(url=image_url)
+
+        embed.set_footer(
+            text="Vintage Hunter • eBay"
+        )
+
+        view = discord.ui.View()
+
+        view.add_item(
+            discord.ui.Button(
+                label="View Listing",
+                url=listing.listing_url,
+            )
+        )
 
         user = await self.client.fetch_user(DISCORD_USER_ID)
-        await user.send(embed=embed)
+
+        await user.send(
+            embed=embed,
+            view=view,
+        )
