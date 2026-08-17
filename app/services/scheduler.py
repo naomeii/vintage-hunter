@@ -2,9 +2,7 @@ import asyncio
 
 from app.hunter import run_hunter
 from app.services.discord import DiscordService
-
-
-HUNTER_INTERVAL_SECONDS = 5 * 60  # 5 minutes
+from app.config import HUNTER_INTERVAL_SECONDS
 
 
 async def run_scheduler(discord_service: DiscordService):

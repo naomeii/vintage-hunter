@@ -91,10 +91,7 @@ class DiscordService:
             inline=False,
         )
 
-        image_url = self._get_best_image_url(listing)
-
-        if image_url:
-            embed.set_image(url=image_url)
+        embed.set_image(url=listing.thumbnail_image_url)
 
         embed.set_footer(
             text="Vintage Hunter • eBay"
