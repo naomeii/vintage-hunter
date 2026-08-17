@@ -67,6 +67,43 @@ def get_saved_searches() -> list[Search]:
 
         return searches
 
+# prevent saving duplicate searches
+def search_exists(search: Search) -> bool:
+    with sqlite3.connect(DATABASE_PATH) as connection:
+        cursor = connection.cursor()
+
+        if search.max_price is None:
+            cursor.execute(
+                """
+                SELECT 1
+                FROM searches
+                WHERE query = ?
+                  AND max_price IS NULL
+                  AND condition = ?
+                """,
+                (
+                    search.query,
+                    search.condition.value,
+                ),
+            )
+        else:
+            cursor.execute(
+                """
+                SELECT 1
+                FROM searches
+                WHERE query = ?
+                  AND max_price = ?
+                  AND condition = ?
+                """,
+                (
+                    search.query,
+                    search.max_price,
+                    search.condition.value,
+                ),
+            )
+
+        return cursor.fetchone() is not None
+
 def delete_search(search_id: int):
     with sqlite3.connect(DATABASE_PATH) as connection:
         cursor = connection.cursor()

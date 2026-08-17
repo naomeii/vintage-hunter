@@ -246,3 +246,81 @@ async def test_run_hunter_does_not_mark_seen_if_discord_fails(
 
     # Because Discord failed, listing must NOT be marked as seen
     mark_seen.assert_not_called()
+
+@pytest.mark.asyncio
+async def test_run_hunter_processes_multiple_searches(monkeypatch):
+    searches = [
+        Search(
+            id=1,
+            query="balenciaga city small",
+            max_price=1500,
+            condition=Condition.USED,
+        ),
+        Search(
+            id=2,
+            query="miu miu wander",
+            max_price=2000,
+            condition=Condition.ANY,
+        ),
+    ]
+
+    listing_1 = make_listing(
+        "123",
+        "Balenciaga City Small",
+    )
+
+    listing_2 = make_listing(
+        "456",
+        "Miu Miu Wander",
+    )
+
+    result = AuthenticityResult(
+        confidence=0.84,
+        recommendation=Recommendation.BUY,
+        explanation="Looks authentic.",
+    )
+
+    monkeypatch.setattr(
+        "app.hunter.get_saved_searches",
+        lambda: searches,
+    )
+
+    def fake_search(search):
+        if search.query == "balenciaga city small":
+            return [listing_1]
+
+        if search.query == "miu miu wander":
+            return [listing_2]
+
+        return []
+
+    monkeypatch.setattr(
+        "app.hunter.ebay.search",
+        fake_search,
+    )
+
+    monkeypatch.setattr(
+        "app.hunter.has_seen_listing",
+        lambda listing: False,
+    )
+
+    monkeypatch.setattr(
+        "app.hunter.analyze_listing",
+        lambda listing: result,
+    )
+
+    mark_seen = Mock()
+
+    monkeypatch.setattr(
+        "app.hunter.mark_listing_seen",
+        mark_seen,
+    )
+
+    discord = AsyncMock()
+
+    await run_hunter(discord)
+
+    assert discord.send_listing_notification.await_count == 2
+
+    mark_seen.assert_any_call(listing_1)
+    mark_seen.assert_any_call(listing_2)
