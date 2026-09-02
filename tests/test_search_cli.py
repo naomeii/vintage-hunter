@@ -24,6 +24,7 @@ def test_show_searches(monkeypatch, capsys):
             query="balenciaga city small",
             max_price=1500,
             condition=Condition.USED,
+            color="Black",
         ),
     ]
 
@@ -39,20 +40,30 @@ def test_show_searches(monkeypatch, capsys):
     assert "balenciaga city small" in output
     assert "$1,500.00" in output
     assert "USED" in output
+    assert "Black" in output
 
 
 def test_add_search(monkeypatch):
     saved_search = Mock()
 
+    # Pretend this search does not already exist
+    monkeypatch.setattr(
+        "app.search_cli.search_exists",
+        lambda search: False,
+    )
+
+    # Prevent the test from writing to the real database
     monkeypatch.setattr(
         "app.search_cli.save_search",
         saved_search,
     )
 
+    # Fake the user's CLI input
     inputs = iter([
         "balenciaga city small",
         "1500",
         "3",
+        "1",  # Any color
     ])
 
     monkeypatch.setattr(
@@ -60,15 +71,19 @@ def test_add_search(monkeypatch):
         lambda _: next(inputs),
     )
 
+    # Run the CLI function
     add_search()
 
+    # Verify the search was saved once
     saved_search.assert_called_once()
 
     search = saved_search.call_args.args[0]
 
+    # Verify the Search object was built correctly
     assert search.query == "balenciaga city small"
     assert search.max_price == 1500
     assert search.condition == Condition.USED
+    assert search.color is None
 
 
 def test_add_search_rejects_invalid_price(monkeypatch):
@@ -200,6 +215,7 @@ def test_add_search_rejects_duplicate(monkeypatch):
         "balenciaga city small",
         "1500",
         "3",
+        "1",  # Any color
     ])
 
     monkeypatch.setattr(
@@ -210,3 +226,77 @@ def test_add_search_rejects_duplicate(monkeypatch):
     add_search()
 
     saved_search.assert_not_called()
+
+def test_add_search_with_black_color(monkeypatch):
+    saved_search = Mock()
+
+    # Pretend this search does not already exist
+    monkeypatch.setattr(
+        "app.search_cli.search_exists",
+        lambda search: False,
+    )
+
+    # Prevent writing to the real database
+    monkeypatch.setattr(
+        "app.search_cli.save_search",
+        saved_search,
+    )
+
+    # Choose Black as the color
+    inputs = iter([
+        "balenciaga city small",
+        "1500",
+        "3",
+        "2",
+    ])
+
+    monkeypatch.setattr(
+        "builtins.input",
+        lambda _: next(inputs),
+    )
+
+    add_search()
+
+    saved_search.assert_called_once()
+
+    search = saved_search.call_args.args[0]
+
+    assert search.color == "Black"
+
+
+def test_add_search_with_custom_color(monkeypatch):
+    saved_search = Mock()
+
+    # Pretend this search does not already exist
+    monkeypatch.setattr(
+        "app.search_cli.search_exists",
+        lambda search: False,
+    )
+
+    # Prevent writing to the real database
+    monkeypatch.setattr(
+        "app.search_cli.save_search",
+        saved_search,
+    )
+
+    # Choose "Other" and enter a custom color
+    inputs = iter([
+        "balenciaga city small",
+        "1500",
+        "3",
+        "11",
+        "Dark green",
+    ])
+
+    monkeypatch.setattr(
+        "builtins.input",
+        lambda _: next(inputs),
+    )
+
+    add_search()
+
+    saved_search.assert_called_once()
+
+    search = saved_search.call_args.args[0]
+
+    assert search.color == "Dark green"

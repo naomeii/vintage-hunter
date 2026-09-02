@@ -12,9 +12,19 @@ def initialize_database():
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 query TEXT NOT NULL,
                 max_price REAL,
-                condition TEXT NOT NULL
+                condition TEXT NOT NULL,
+                color TEXT
             )
         """)
+
+        # Add color to older databases that don't have it yet
+        cursor.execute("PRAGMA table_info(searches)")
+        columns = [row[1] for row in cursor.fetchall()]
+
+        if "color" not in columns:
+            cursor.execute(
+                "ALTER TABLE searches ADD COLUMN color TEXT"
+            )
 
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS seen_listings (
@@ -24,20 +34,20 @@ def initialize_database():
             )
         """)
 
-
 def save_search(search: Search):
     with sqlite3.connect(DATABASE_PATH) as connection:
         cursor = connection.cursor()
 
         cursor.execute(
             """
-            INSERT INTO searches (query, max_price, condition)
-            VALUES (?, ?, ?)
+            INSERT INTO searches (query, max_price, condition, color)
+            VALUES (?, ?, ?, ?)
             """,
             (
                 search.query,
                 search.max_price,
                 search.condition.value,
+                search.color,
             ),
         )
 
@@ -47,7 +57,7 @@ def get_saved_searches() -> list[Search]:
         cursor = connection.cursor()
 
         cursor.execute("""
-            SELECT id, query, max_price, condition
+            SELECT id, query, max_price, condition, color
             FROM searches
         """)
 
@@ -62,6 +72,7 @@ def get_saved_searches() -> list[Search]:
                     query=row[1],
                     max_price=row[2],
                     condition=Condition(row[3]),
+                    color=row[4],
                 )
             )
 
@@ -80,10 +91,12 @@ def search_exists(search: Search) -> bool:
                 WHERE query = ?
                   AND max_price IS NULL
                   AND condition = ?
+                  AND color IS ?
                 """,
                 (
                     search.query,
                     search.condition.value,
+                    search.color,
                 ),
             )
         else:
@@ -94,11 +107,13 @@ def search_exists(search: Search) -> bool:
                 WHERE query = ?
                   AND max_price = ?
                   AND condition = ?
+                  AND color IS ?
                 """,
                 (
                     search.query,
                     search.max_price,
                     search.condition.value,
+                    search.color
                 ),
             )
 

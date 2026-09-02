@@ -23,11 +23,14 @@ def show_searches():
             else "No limit"
         )
 
+        color = search.color if search.color is not None else "Any color"
+
         print(
             f"{search.id}. "
             f"{search.query} • "
             f"{max_price} • "
-            f"{search.condition.value.upper()}"
+            f"{search.condition.value.upper()} • "
+            f"{color}"
         )
 
 
@@ -77,11 +80,14 @@ def add_search():
         print("✕ Invalid condition.")
         return
 
+    color = choose_color()
+
     search = Search(
         id=None,
         query=query,
         max_price=max_price,
         condition=condition,
+        color=color,
     )
 
     if search_exists(search):
@@ -119,6 +125,51 @@ def remove_search():
     delete_search(search_id)
 
     print("\n♡ Search deleted.")
+
+def choose_color() -> str | None:
+    print(
+        """
+Color:
+1. Any
+2. Black
+3. White
+4. Brown
+5. Beige
+6. Red
+7. Blue
+8. Pink
+9. Green
+10. Gray
+11. Other
+"""
+    )
+
+    choice = input("Choose: ")
+
+    colors = {
+        "1": None,
+        "2": "Black",
+        "3": "White",
+        "4": "Brown",
+        "5": "Beige",
+        "6": "Red",
+        "7": "Blue",
+        "8": "Pink",
+        "9": "Green",
+        "10": "Gray",
+    }
+
+    if choice in colors:
+        return colors[choice]
+
+    if choice == "11":
+        color = input("Enter color: ").strip()
+
+        if color:
+            return color
+
+    print("✕ Invalid color.")
+    return None
 
 
 def main():

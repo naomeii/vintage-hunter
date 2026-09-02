@@ -13,3 +13,4 @@ class Search:
     query: str
     max_price: float | None
     condition: Condition
+    color: str | None = None
