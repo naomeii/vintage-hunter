@@ -1,5 +1,6 @@
 import pytest
-from unittest.mock import AsyncMock
+from datetime import datetime, timedelta, timezone
+
 
 from app.hunter import run_hunter
 from app.models.listing import Listing
@@ -26,7 +27,7 @@ def make_listing(listing_id: str, title: str) -> Listing:
         seller_feedback_percent=99.8,
         seller_feedback_score=8432,
         condition="USED",
-        created_at="today",
+        created_at=datetime.now(timezone.utc).isoformat(),
     )
 
 # Baseline/everything works
@@ -324,3 +325,61 @@ async def test_run_hunter_processes_multiple_searches(monkeypatch):
 
     mark_seen.assert_any_call(listing_1)
     mark_seen.assert_any_call(listing_2)
+
+@pytest.mark.asyncio
+async def test_hunter_skips_old_listings(monkeypatch):
+    search = Search(
+        id=1,
+        query="balenciaga city small",
+        max_price=1500,
+        condition=Condition.ANY,
+        color="Black",
+    )
+
+    old_listing = Listing(
+        platform="ebay",
+        listing_id="old-123",
+        title="Old Bag",
+        price=1000,
+        currency="USD",
+        listing_url="https://example.com/old",
+        thumbnail_image_url=None,
+        additional_image_urls=[],
+        seller_username="seller",
+        seller_feedback_percent=99.9,
+        seller_feedback_score=1000,
+        condition="USED",
+        created_at=(
+            datetime.now(timezone.utc)
+            - timedelta(days=2)
+        ).isoformat(),
+    )
+
+    monkeypatch.setattr(
+        "app.hunter.get_saved_searches",
+        lambda: [search],
+    )
+
+    monkeypatch.setattr(
+        "app.hunter.ebay.search",
+        lambda search: [old_listing],
+    )
+
+    monkeypatch.setattr(
+        "app.hunter.has_seen_listing",
+        lambda listing: False,
+    )
+
+    analyze = Mock()
+
+    monkeypatch.setattr(
+        "app.hunter.analyze_listing",
+        analyze,
+    )
+
+    discord = AsyncMock()
+
+    await run_hunter(discord)
+
+    analyze.assert_not_called()
+    discord.send_listing_notification.assert_not_awaited()

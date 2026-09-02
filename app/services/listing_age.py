@@ -31,3 +31,22 @@ def get_listing_age(created_at: str | None) -> str:
     days = hours // 24
 
     return f"{days} day{'s' if days != 1 else ''} ago"
+
+def is_listing_recent(
+    created_at: str | None,
+    max_age_minutes: int,
+) -> bool:
+    if created_at is None:
+        return False
+
+    created_time = datetime.fromisoformat(
+        created_at.replace("Z", "+00:00")
+    )
+
+    now = datetime.now(timezone.utc)
+
+    age_minutes = (
+        now - created_time
+    ).total_seconds() / 60
+
+    return age_minutes <= max_age_minutes

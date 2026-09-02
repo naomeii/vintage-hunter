@@ -7,6 +7,9 @@ from app.services.database import (
 from app.services.authenticity import analyze_listing
 from app.services.discord import DiscordService
 
+from app.config import HUNTER_MAX_LISTING_AGE_MINUTES
+from app.services.listing_age import is_listing_recent
+
 
 async def run_hunter(discord_service: DiscordService):
     searches = get_saved_searches()
@@ -27,6 +30,14 @@ async def run_hunter(discord_service: DiscordService):
             continue
 
         for listing in listings:
+
+            if not is_listing_recent(
+                listing.created_at,
+                HUNTER_MAX_LISTING_AGE_MINUTES,
+            ):
+                print(f"Skipping old listing: {listing.title}")
+                continue
+
             if has_seen_listing(listing):
                 print(f"Skipping duplicate: {listing.title}")
                 continue
