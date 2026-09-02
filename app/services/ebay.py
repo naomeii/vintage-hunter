@@ -177,9 +177,15 @@ def _search_ebay(search: Search) -> list[Listing]:
         )
 
         for item in items:
-            listings.append(
-                _normalize_ebay_listing(item)
-            )
+            listing = _normalize_ebay_listing(item)
+
+            if (
+                search.max_price is not None
+                and listing.price > search.max_price
+            ):
+                continue
+
+            listings.append(listing)
 
         # No more results
         if len(items) < limit:

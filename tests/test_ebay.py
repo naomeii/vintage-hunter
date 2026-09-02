@@ -347,3 +347,72 @@ def test_search_ebay_applies_color_filter(monkeypatch):
     assert params["aspect_filter"] == (
         "categoryId:3000,Color:{Black}"
     )
+
+def test_search_filters_out_listings_over_max_price(monkeypatch):
+    search = Search(
+        id=None,
+        query="balenciaga city small",
+        max_price=1500,
+        condition=Condition.ANY,
+        color=None,
+    )
+
+    fake_response = {
+        "itemSummaries": [
+            {
+                "itemId": "123",
+                "title": "Cheap Bag",
+                "price": {
+                    "value": "1200",
+                    "currency": "USD",
+                },
+                "itemWebUrl": "https://example.com/123",
+                "seller": {
+                    "username": "seller",
+                    "feedbackPercentage": "99.9",
+                    "feedbackScore": 1000,
+                },
+                "condition": "USED",
+            },
+            {
+                "itemId": "456",
+                "title": "Expensive Bag",
+                "price": {
+                    "value": "2000",
+                    "currency": "USD",
+                },
+                "itemWebUrl": "https://example.com/456",
+                "seller": {
+                    "username": "seller",
+                    "feedbackPercentage": "99.9",
+                    "feedbackScore": 1000,
+                },
+                "condition": "USED",
+            },
+        ]
+    }
+
+    class FakeResponse:
+        def json(self):
+            return fake_response
+
+        def raise_for_status(self):
+            pass
+
+    monkeypatch.setattr(
+        ebay,
+        "get_access_token",
+        lambda: "fake-token",
+    )
+
+    monkeypatch.setattr(
+        ebay.requests,
+        "get",
+        lambda *args, **kwargs: FakeResponse(),
+    )
+
+    listings = ebay.search(search)
+
+    assert len(listings) == 1
+    assert listings[0].listing_id == "123"
+    assert listings[0].price == 1200
