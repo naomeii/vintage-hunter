@@ -14,4 +14,4 @@ class Listing:
     seller_feedback_percent: float
     seller_feedback_score: int
     condition: str
-    created_at: str
+    created_at: str | None = None

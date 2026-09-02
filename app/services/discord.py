@@ -4,7 +4,7 @@ import discord
 from app.config import DISCORD_BOT_TOKEN, DISCORD_USER_ID
 from app.models.listing import Listing
 from app.models.authenticity_result import AuthenticityResult, Recommendation
-
+from app.services.listing_age import get_listing_age
 
 class DiscordService:
 
@@ -35,6 +35,8 @@ class DiscordService:
         listing: Listing,
         result: AuthenticityResult,
     ):
+        listing_age = get_listing_age(listing.created_at)
+
         if result.recommendation == Recommendation.BUY:
             color = 0x57F287
             greeting = "₍^. .^₎Ⳋ I found something!"
@@ -66,6 +68,12 @@ class DiscordService:
         embed.add_field(
             name="୨୧ Price",
             value=f"${listing.price:,.2f} {listing.currency}",
+            inline=False,
+        )
+
+        embed.add_field(
+            name="୨୧ Listed",
+            value=listing_age,
             inline=False,
         )
 

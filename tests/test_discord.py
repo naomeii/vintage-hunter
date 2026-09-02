@@ -6,6 +6,7 @@ from app.models.authenticity_result import (
     Recommendation,
 )
 from app.services.discord import DiscordService
+from unittest.mock import patch
 
 
 @pytest.mark.asyncio
@@ -28,7 +29,7 @@ async def test_discord_notification():
             seller_feedback_percent=99.8,
             seller_feedback_score=8432,
             condition="USED",
-            created_at="today",
+            created_at="2026-09-02T22:00:00Z",
         )
 
         result = AuthenticityResult(
@@ -41,10 +42,14 @@ async def test_discord_notification():
             ),
         )
 
-        await discord_service.send_listing_notification(
-            listing,
-            result,
-        )
+        with patch(
+            "app.services.discord.get_listing_age",
+            return_value="3 minutes ago",
+        ):
+            await discord_service.send_listing_notification(
+                listing,
+                result,
+            )
 
     finally:
         await discord_service.close()

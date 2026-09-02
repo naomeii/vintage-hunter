@@ -224,7 +224,7 @@ def _normalize_ebay_listing(ebay_json_raw_listing: dict) -> Listing:
     seller_feedback_score = raw_listing["seller"]["feedbackScore"]
 
     condition = raw_listing["condition"]
-    created_at = raw_listing["itemCreationDate"]
+    created_at = raw_listing.get("itemCreationDate")
 
     return Listing(
         platform="ebay",
