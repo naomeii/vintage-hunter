@@ -7,6 +7,7 @@ from app.services import ebay
 def test_search_applies_max_price_and_condition(monkeypatch):
     search = Search(
         id=None,
+        user_id=1,
         query="balenciaga city small",
         max_price=1500,
         condition=Condition.USED,
@@ -56,6 +57,7 @@ def test_search_applies_max_price_and_condition(monkeypatch):
 def test_search_applies_new_condition(monkeypatch):
     search = Search(
         id=None,
+        user_id=1,
         query="balenciaga city small",
         max_price=None,
         condition=Condition.NEW,
@@ -95,6 +97,7 @@ def test_search_applies_new_condition(monkeypatch):
 def test_search_any_condition_has_no_condition_filter(monkeypatch):
     search = Search(
         id=None,
+        user_id=1,
         query="balenciaga city small",
         max_price=None,
         condition=Condition.ANY,
@@ -132,6 +135,7 @@ def test_search_paginates(monkeypatch):
     # Create the search we're testing
     search = Search(
         id=None,
+        user_id=1,
         query="balenciaga city small",
         max_price=None,
         condition=Condition.ANY,
@@ -236,6 +240,7 @@ def test_search_paginates(monkeypatch):
 def test_get_color_filter(monkeypatch):
     search = Search(
         id=None,
+        user_id=1,
         query="Balenciaga City",
         max_price=1600,
         condition=Condition.ANY,
@@ -279,6 +284,7 @@ def test_get_color_filter(monkeypatch):
 def test_get_color_filter_any_color(monkeypatch):
     search = Search(
         id=None,
+        user_id=1,
         query="Balenciaga City",
         max_price=1600,
         condition=Condition.ANY,
@@ -305,6 +311,7 @@ def test_get_color_filter_any_color(monkeypatch):
 def test_search_ebay_applies_color_filter(monkeypatch):
     search = Search(
         id=None,
+        user_id=1,
         query="Balenciaga City",
         max_price=1600,
         condition=Condition.ANY,
@@ -351,6 +358,7 @@ def test_search_ebay_applies_color_filter(monkeypatch):
 def test_search_filters_out_listings_over_max_price(monkeypatch):
     search = Search(
         id=None,
+        user_id=1,
         query="balenciaga city small",
         max_price=1500,
         condition=Condition.ANY,
@@ -420,6 +428,7 @@ def test_search_filters_out_listings_over_max_price(monkeypatch):
 def test_search_pagination_keeps_limit_at_50_on_final_page(monkeypatch):
     search = Search(
         id=None,
+        user_id=1,
         query="balenciaga city small",
         max_price=None,
         condition=Condition.ANY,
@@ -513,6 +522,7 @@ def test_search_pagination_keeps_limit_at_50_on_final_page(monkeypatch):
 def test_search_filters_out_listings_below_min_price(monkeypatch):
     search = Search(
         id=None,
+        user_id=1,
         query="balenciaga city small",
         min_price=500,
         max_price=1500,

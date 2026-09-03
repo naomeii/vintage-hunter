@@ -21,6 +21,7 @@ def test_show_searches(monkeypatch, capsys):
     searches = [
         Search(
             id=1,
+            user_id=1,
             query="balenciaga city small",
             max_price=1500,
             condition=Condition.USED,
@@ -138,6 +139,7 @@ def test_remove_search(monkeypatch):
     searches = [
         Search(
             id=1,
+            user_id=1,
             query="balenciaga city small",
             max_price=1500,
             condition=Condition.USED,
@@ -172,6 +174,7 @@ def test_remove_search_rejects_missing_id(monkeypatch):
     searches = [
         Search(
             id=1,
+            user_id=1,
             query="balenciaga city small",
             max_price=1500,
             condition=Condition.USED,

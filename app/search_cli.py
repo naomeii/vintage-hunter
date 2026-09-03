@@ -116,6 +116,7 @@ def add_search():
 
     search = Search(
         id=None,
+        user_id=1,
         query=query,
         condition=condition,
         min_price=min_price,

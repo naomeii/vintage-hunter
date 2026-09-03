@@ -9,6 +9,7 @@ class Condition(Enum):
 @dataclass
 class Search:
     id: int | None
+    user_id: int
     query: str
     condition: Condition
     min_price: float | None = None

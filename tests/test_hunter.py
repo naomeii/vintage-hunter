@@ -35,6 +35,7 @@ def make_listing(listing_id: str, title: str) -> Listing:
 async def test_run_hunter_success(monkeypatch):
     search = Search(
         id=1,
+        user_id=1,
         query="balenciaga city small",
         max_price=None,
         condition=Condition.ANY,
@@ -90,6 +91,7 @@ async def test_run_hunter_success(monkeypatch):
 async def test_run_hunter_search_failure(monkeypatch):
     search = Search(
         id=1,
+        user_id=1,
         query="balenciaga city small",
         max_price=None,
         condition=Condition.ANY,
@@ -119,6 +121,7 @@ async def test_run_hunter_search_failure(monkeypatch):
 async def test_run_hunter_continues_after_listing_failure(monkeypatch):
     search = Search(
         id=1,
+        user_id=1,
         query="balenciaga city small",
         max_price=None,
         condition=Condition.ANY,
@@ -186,6 +189,7 @@ async def test_run_hunter_does_not_mark_seen_if_discord_fails(
 ):
     search = Search(
         id=1,
+        user_id=1,
         query="balenciaga city small",
         max_price=None,
         condition=Condition.ANY,
@@ -253,12 +257,14 @@ async def test_run_hunter_processes_multiple_searches(monkeypatch):
     searches = [
         Search(
             id=1,
+            user_id=1,
             query="balenciaga city small",
             max_price=1500,
             condition=Condition.USED,
         ),
         Search(
             id=2,
+            user_id=1,
             query="miu miu wander",
             max_price=2000,
             condition=Condition.ANY,
@@ -330,6 +336,7 @@ async def test_run_hunter_processes_multiple_searches(monkeypatch):
 async def test_hunter_skips_old_listings(monkeypatch):
     search = Search(
         id=1,
+        user_id=1,
         query="balenciaga city small",
         max_price=1500,
         condition=Condition.ANY,
