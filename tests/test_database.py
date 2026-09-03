@@ -88,3 +88,26 @@ def test_search_without_max_price(monkeypatch, tmp_path):
     database.save_search(search)
 
     assert database.search_exists(search)
+
+def test_different_min_price_is_not_duplicate(monkeypatch, tmp_path):
+    setup_test_database(monkeypatch, tmp_path)
+
+    search = Search(
+        id=None,
+        query="balenciaga city small",
+        min_price=500,
+        max_price=1500,
+        condition=Condition.ANY,
+    )
+
+    database.save_search(search)
+
+    different_search = Search(
+        id=None,
+        query="balenciaga city small",
+        min_price=600,
+        max_price=1500,
+        condition=Condition.ANY,
+    )
+
+    assert not database.search_exists(different_search)

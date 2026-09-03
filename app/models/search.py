@@ -9,8 +9,8 @@ class Condition(Enum):
 @dataclass
 class Search:
     id: int | None
-
     query: str
-    max_price: float | None
     condition: Condition
+    min_price: float | None = None
+    max_price: float | None = None
     color: str | None = None

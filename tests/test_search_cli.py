@@ -61,9 +61,10 @@ def test_add_search(monkeypatch):
     # Fake the user's CLI input
     inputs = iter([
         "balenciaga city small",
-        "1500",
+        "",       # No minimum
+        "1500",   # Max price
         "3",
-        "1",  # Any color
+        "1",
     ])
 
     monkeypatch.setattr(
@@ -213,6 +214,7 @@ def test_add_search_rejects_duplicate(monkeypatch):
 
     inputs = iter([
         "balenciaga city small",
+        "",
         "1500",
         "3",
         "1",  # Any color
@@ -245,6 +247,7 @@ def test_add_search_with_black_color(monkeypatch):
     # Choose Black as the color
     inputs = iter([
         "balenciaga city small",
+        "",
         "1500",
         "3",
         "2",
@@ -282,6 +285,7 @@ def test_add_search_with_custom_color(monkeypatch):
     # Choose "Other" and enter a custom color
     inputs = iter([
         "balenciaga city small",
+        "",
         "1500",
         "3",
         "11",

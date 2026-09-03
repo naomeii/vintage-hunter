@@ -17,10 +17,16 @@ def show_searches():
     print("\n♡ Saved Searches\n")
 
     for search in searches:
+        min_price = (
+            f"${search.min_price:,.2f}"
+            if search.min_price is not None
+            else "No min"
+        )
+
         max_price = (
             f"${search.max_price:,.2f}"
             if search.max_price is not None
-            else "No limit"
+            else "No max"
         )
 
         color = search.color if search.color is not None else "Any color"
@@ -28,7 +34,7 @@ def show_searches():
         print(
             f"{search.id}. "
             f"{search.query} • "
-            f"{max_price} • "
+            f"{min_price}–{max_price} • "
             f"{search.condition.value.upper()} • "
             f"{color}"
         )
@@ -42,6 +48,24 @@ def add_search():
     if not query:
         print("✕ Query cannot be empty.")
         return
+
+    min_price_input = input(
+        "Min price (leave blank for no minimum): "
+    ).strip()
+
+    if min_price_input:
+        try:
+            min_price = float(min_price_input)
+
+            if min_price < 0:
+                print("✕ Min price cannot be negative.")
+                return
+
+        except ValueError:
+            print("✕ Please enter a valid price.")
+            return
+    else:
+        min_price = None
 
     max_price_input = input(
         "Max price (leave blank for no limit): "
@@ -60,6 +84,14 @@ def add_search():
             return
     else:
         max_price = None
+
+    if (
+        min_price is not None
+        and max_price is not None
+        and min_price > max_price
+    ):
+        print("✕ Min price cannot be greater than max price.")
+        return
 
     print("\nCondition:")
     print("1. Any")
@@ -85,8 +117,9 @@ def add_search():
     search = Search(
         id=None,
         query=query,
-        max_price=max_price,
         condition=condition,
+        min_price=min_price,
+        max_price=max_price,
         color=color,
     )
 

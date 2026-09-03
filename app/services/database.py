@@ -11,6 +11,7 @@ def initialize_database():
             CREATE TABLE IF NOT EXISTS searches (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 query TEXT NOT NULL,
+                min_price REAL,
                 max_price REAL,
                 condition TEXT NOT NULL,
                 color TEXT
@@ -24,6 +25,11 @@ def initialize_database():
         if "color" not in columns:
             cursor.execute(
                 "ALTER TABLE searches ADD COLUMN color TEXT"
+            )
+
+        if "min_price" not in columns:
+            cursor.execute(
+                "ALTER TABLE searches ADD COLUMN min_price REAL"
             )
 
         cursor.execute("""
@@ -40,11 +46,12 @@ def save_search(search: Search):
 
         cursor.execute(
             """
-            INSERT INTO searches (query, max_price, condition, color)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO searches (query, min_price, max_price, condition, color)
+            VALUES (?, ?, ?, ?, ?)
             """,
             (
                 search.query,
+                search.min_price,
                 search.max_price,
                 search.condition.value,
                 search.color,
@@ -57,7 +64,7 @@ def get_saved_searches() -> list[Search]:
         cursor = connection.cursor()
 
         cursor.execute("""
-            SELECT id, query, max_price, condition, color
+            SELECT id, query, min_price, max_price, condition, color
             FROM searches
         """)
 
@@ -70,9 +77,10 @@ def get_saved_searches() -> list[Search]:
                 Search(
                     id=row[0],
                     query=row[1],
-                    max_price=row[2],
-                    condition=Condition(row[3]),
-                    color=row[4],
+                    min_price=row[2],
+                    max_price=row[3],
+                    condition=Condition(row[4]),
+                    color=row[5],
                 )
             )
 
@@ -83,39 +91,24 @@ def search_exists(search: Search) -> bool:
     with sqlite3.connect(DATABASE_PATH) as connection:
         cursor = connection.cursor()
 
-        if search.max_price is None:
-            cursor.execute(
-                """
-                SELECT 1
-                FROM searches
-                WHERE query = ?
-                  AND max_price IS NULL
-                  AND condition = ?
-                  AND color IS ?
-                """,
-                (
-                    search.query,
-                    search.condition.value,
-                    search.color,
-                ),
-            )
-        else:
-            cursor.execute(
-                """
-                SELECT 1
-                FROM searches
-                WHERE query = ?
-                  AND max_price = ?
-                  AND condition = ?
-                  AND color IS ?
-                """,
-                (
-                    search.query,
-                    search.max_price,
-                    search.condition.value,
-                    search.color
-                ),
-            )
+        cursor.execute(
+            """
+            SELECT 1
+            FROM searches
+            WHERE query = ?
+              AND min_price IS ?
+              AND max_price IS ?
+              AND condition = ?
+              AND color IS ?
+            """,
+            (
+                search.query,
+                search.min_price,
+                search.max_price,
+                search.condition.value,
+                search.color,
+            ),
+        )
 
         return cursor.fetchone() is not None
 

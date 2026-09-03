@@ -142,9 +142,24 @@ def _search_ebay(search: Search) -> list[Listing]:
 
         filters = []
 
-        if search.max_price is not None:
+        if (
+            search.min_price is not None
+            or search.max_price is not None
+        ):
+            min_price = (
+                search.min_price
+                if search.min_price is not None
+                else ""
+            )
+
+            max_price = (
+                search.max_price
+                if search.max_price is not None
+                else ""
+            )
+
             filters.append(
-                f"price:[..{search.max_price}]"
+                f"price:[{min_price}..{max_price}]"
             )
 
         if search.condition == Condition.NEW:
@@ -173,6 +188,12 @@ def _search_ebay(search: Search) -> list[Listing]:
 
         for item in items:
             listing = _normalize_ebay_listing(item)
+
+            if (
+                search.min_price is not None
+                and listing.price < search.min_price
+            ):
+                continue
 
             if (
                 search.max_price is not None

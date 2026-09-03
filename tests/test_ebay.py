@@ -509,3 +509,70 @@ def test_search_pagination_keeps_limit_at_50_on_final_page(monkeypatch):
 
     assert calls[1]["limit"] == 50
     assert calls[1]["offset"] == 50
+
+def test_search_filters_out_listings_below_min_price(monkeypatch):
+    search = Search(
+        id=None,
+        query="balenciaga city small",
+        min_price=500,
+        max_price=1500,
+        condition=Condition.ANY,
+    )
+
+    def make_item(item_id, price):
+        return {
+            "itemId": item_id,
+            "title": f"Balenciaga City {item_id}",
+            "price": {
+                "value": str(price),
+                "currency": "USD",
+            },
+            "itemWebUrl": "https://www.ebay.com/",
+            "image": {
+                "imageUrl": "https://example.com/image.jpg",
+            },
+            "additionalImages": [],
+            "seller": {
+                "username": "seller",
+                "feedbackPercentage": "99.0",
+                "feedbackScore": 1000,
+            },
+            "condition": "USED",
+            "itemCreationDate": "2026-08-18T12:00:00.000Z",
+        }
+
+    items = [
+        make_item("1", 300),
+        make_item("2", 500),
+        make_item("3", 1000),
+    ]
+
+    response = Mock(
+        json=Mock(
+            return_value={
+                "itemSummaries": items,
+            }
+        )
+    )
+
+    response.raise_for_status.return_value = None
+
+    monkeypatch.setattr(
+        ebay,
+        "get_access_token",
+        lambda: "fake-token",
+    )
+
+    monkeypatch.setattr(
+        ebay.requests,
+        "get",
+        lambda *args, **kwargs: response,
+    )
+
+    listings = ebay.search(search)
+
+    assert len(listings) == 2
+    assert [listing.price for listing in listings] == [
+        500,
+        1000,
+    ]
