@@ -1,7 +1,6 @@
 import asyncio
 
 from app.services.database import initialize_database
-from app.services.discord import DiscordService
 from app.services.scheduler import run_scheduler
 
 
@@ -10,14 +9,7 @@ async def main():
 
     initialize_database()
 
-    discord_service = DiscordService()
-
-    await discord_service.login()
-
-    try:
-        await run_scheduler(discord_service)
-    finally:
-        await discord_service.close()
+    await run_scheduler()
 
 
 asyncio.run(main())

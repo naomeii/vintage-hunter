@@ -2,15 +2,21 @@ import asyncio
 
 from app.hunter import run_hunter
 from app.services.discord import DiscordService
+from app.services.database import get_all_users
 from app.config import HUNTER_INTERVAL_SECONDS
 
 
-async def run_scheduler(discord_service: DiscordService):
+async def run_scheduler():
     while True:
         try:
             print("\n♡ Vintage Hunter is hunting...")
 
-            await run_hunter(discord_service)
+            users = get_all_users()
+
+            for user in users:
+                discord_service = DiscordService(user["discord_user_id"])
+
+                await run_hunter(user["id"], discord_service)
 
             print(
                 f"♡ Hunt complete. "

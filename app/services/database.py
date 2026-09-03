@@ -42,9 +42,10 @@ def initialize_database():
 
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS seen_listings (
+                user_id INTEGER NOT NULL,
                 platform TEXT NOT NULL,
                 listing_id TEXT NOT NULL,
-                PRIMARY KEY (platform, listing_id)
+                PRIMARY KEY (user_id, platform, listing_id)
             )
         """)
 
@@ -180,30 +181,65 @@ def delete_search(search_id: int, user_id: int):
         )
 
 
-def has_seen_listing(listing: Listing) -> bool:
+def has_seen_listing(user_id: int, listing: Listing,) -> bool:
     with sqlite3.connect(DATABASE_PATH) as connection:
         cursor = connection.cursor()
         cursor.execute(
             """
             SELECT 1
             FROM seen_listings
-            WHERE platform = ? AND listing_id = ?
+            WHERE user_id = ?
+            AND platform = ?
+            AND listing_id = ?
             """,
-            (listing.platform, listing.listing_id),
+            (
+                user_id,
+                listing.platform,
+                listing.listing_id,
+            ),
         )
 
         row = cursor.fetchone()
 
         return row is not None
 
-def mark_listing_seen(listing: Listing):
+def mark_listing_seen(user_id: int, listing: Listing,):
     with sqlite3.connect(DATABASE_PATH) as connection:
         cursor = connection.cursor()
 
         cursor.execute(
             """
-            INSERT INTO seen_listings (platform, listing_id)
-            VALUES (?, ?)
+            INSERT INTO seen_listings (
+                user_id,
+                platform,
+                listing_id
+            )
+            VALUES (?, ?, ?)
             """,
-            (listing.platform, listing.listing_id),
+            (
+                user_id,
+                listing.platform,
+                listing.listing_id,
+            ),
         )
+
+def get_all_users() -> list[dict]:
+    with sqlite3.connect(DATABASE_PATH) as connection:
+        cursor = connection.cursor()
+
+        cursor.execute(
+            """
+            SELECT id, discord_user_id
+            FROM users
+            """
+        )
+
+        rows = cursor.fetchall()
+
+        return [
+            {
+                "id": row[0],
+                "discord_user_id": row[1],
+            }
+            for row in rows
+        ]

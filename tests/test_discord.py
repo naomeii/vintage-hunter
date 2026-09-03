@@ -6,12 +6,23 @@ from app.models.authenticity_result import (
     Recommendation,
 )
 from app.services.discord import DiscordService
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 
+# creates discordservice w/ user ID
+# mocks discord related activities
+# verifies notif tried to fetch correct user's Discord ID
 @pytest.mark.asyncio
 async def test_discord_notification():
-    discord_service = DiscordService()
+    discord_service = DiscordService("123456")
+
+    discord_service.client.login = AsyncMock()
+
+    mock_user = AsyncMock()
+
+    discord_service.client.fetch_user = AsyncMock(
+        return_value=mock_user
+    )
 
     await discord_service.login()
 
@@ -50,6 +61,8 @@ async def test_discord_notification():
                 listing,
                 result,
             )
+
+            discord_service.client.fetch_user.assert_called_with("123456")
 
     finally:
         await discord_service.close()

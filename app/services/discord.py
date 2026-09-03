@@ -1,14 +1,16 @@
 # used to expose methods like send_listing_notification()
 import discord
 
-from app.config import DISCORD_BOT_TOKEN, DISCORD_USER_ID
+from app.config import DISCORD_BOT_TOKEN
 from app.models.listing import Listing
 from app.models.authenticity_result import AuthenticityResult, Recommendation
 from app.services.listing_age import get_listing_age
 
 class DiscordService:
 
-    def __init__(self):
+    def __init__(self, discord_user_id: str):
+        self.discord_user_id = discord_user_id
+
         intents = discord.Intents.default()
 
         self.client = discord.Client(intents=intents)
@@ -27,7 +29,7 @@ class DiscordService:
         await self.client.close()
 
     async def send_message(self, message: str):
-        user = await self.client.fetch_user(DISCORD_USER_ID)
+        user = await self.client.fetch_user(self.discord_user_id)
         await user.send(message)
 
     async def send_listing_notification(
@@ -114,7 +116,7 @@ class DiscordService:
             )
         )
 
-        user = await self.client.fetch_user(DISCORD_USER_ID)
+        user = await self.client.fetch_user(self.discord_user_id)
 
         await user.send(
             embed=embed,

@@ -54,7 +54,7 @@ async def test_run_hunter_success(monkeypatch):
 
     monkeypatch.setattr(
         "app.hunter.get_saved_searches",
-        lambda: [search],
+        lambda user_id: [search],
     )
 
     monkeypatch.setattr(
@@ -64,7 +64,7 @@ async def test_run_hunter_success(monkeypatch):
 
     monkeypatch.setattr(
         "app.hunter.has_seen_listing",
-        lambda listing: False,
+        lambda user_id, listing: False,
     )
 
     monkeypatch.setattr(
@@ -74,12 +74,12 @@ async def test_run_hunter_success(monkeypatch):
 
     mark_seen = monkeypatch.setattr(
         "app.hunter.mark_listing_seen",
-        lambda listing: None,
+        lambda user_id, listing: None,
     )
 
     discord = AsyncMock()
 
-    await run_hunter(discord)
+    await run_hunter(1, discord)
 
     discord.send_listing_notification.assert_awaited_once_with(
         listing,
@@ -99,7 +99,7 @@ async def test_run_hunter_search_failure(monkeypatch):
 
     monkeypatch.setattr(
         "app.hunter.get_saved_searches",
-        lambda: [search],
+        lambda user_id: [search],
     )
 
     def failed_search(search):
@@ -112,7 +112,7 @@ async def test_run_hunter_search_failure(monkeypatch):
 
     discord = AsyncMock()
 
-    await run_hunter(discord)
+    await run_hunter(1, discord)
 
     discord.send_listing_notification.assert_not_awaited()
 
@@ -145,7 +145,7 @@ async def test_run_hunter_continues_after_listing_failure(monkeypatch):
 
     monkeypatch.setattr(
         "app.hunter.get_saved_searches",
-        lambda: [search],
+        lambda user_id: [search],
     )
 
     monkeypatch.setattr(
@@ -155,7 +155,7 @@ async def test_run_hunter_continues_after_listing_failure(monkeypatch):
 
     monkeypatch.setattr(
         "app.hunter.has_seen_listing",
-        lambda listing: False,
+        lambda user_id, listing: False,
     )
 
     def analyze(listing):
@@ -171,12 +171,12 @@ async def test_run_hunter_continues_after_listing_failure(monkeypatch):
 
     mark_seen = monkeypatch.setattr(
         "app.hunter.mark_listing_seen",
-        lambda listing: None,
+        lambda user_id, listing: None,
     )
 
     discord = AsyncMock()
 
-    await run_hunter(discord)
+    await run_hunter(1, discord)
 
     discord.send_listing_notification.assert_awaited_once_with(
         listing_2,
@@ -208,7 +208,7 @@ async def test_run_hunter_does_not_mark_seen_if_discord_fails(
 
     monkeypatch.setattr(
         "app.hunter.get_saved_searches",
-        lambda: [search],
+        lambda user_id: [search],
     )
 
     monkeypatch.setattr(
@@ -218,7 +218,7 @@ async def test_run_hunter_does_not_mark_seen_if_discord_fails(
 
     monkeypatch.setattr(
         "app.hunter.has_seen_listing",
-        lambda listing: False,
+        lambda user_id, listing: False,
     )
 
     monkeypatch.setattr(
@@ -241,7 +241,7 @@ async def test_run_hunter_does_not_mark_seen_if_discord_fails(
         RuntimeError("Discord unavailable")
     )
 
-    await run_hunter(discord)
+    await run_hunter(1, discord)
 
     # Discord was attempted
     discord.send_listing_notification.assert_awaited_once_with(
@@ -289,7 +289,7 @@ async def test_run_hunter_processes_multiple_searches(monkeypatch):
 
     monkeypatch.setattr(
         "app.hunter.get_saved_searches",
-        lambda: searches,
+        lambda user_id: searches,
     )
 
     def fake_search(search):
@@ -308,7 +308,7 @@ async def test_run_hunter_processes_multiple_searches(monkeypatch):
 
     monkeypatch.setattr(
         "app.hunter.has_seen_listing",
-        lambda listing: False,
+        lambda user_id, listing: False,
     )
 
     monkeypatch.setattr(
@@ -325,12 +325,12 @@ async def test_run_hunter_processes_multiple_searches(monkeypatch):
 
     discord = AsyncMock()
 
-    await run_hunter(discord)
+    await run_hunter(1, discord)
 
     assert discord.send_listing_notification.await_count == 2
 
-    mark_seen.assert_any_call(listing_1)
-    mark_seen.assert_any_call(listing_2)
+    mark_seen.assert_any_call(1, listing_1)
+    mark_seen.assert_any_call(1, listing_2)
 
 @pytest.mark.asyncio
 async def test_hunter_skips_old_listings(monkeypatch):
@@ -364,7 +364,7 @@ async def test_hunter_skips_old_listings(monkeypatch):
 
     monkeypatch.setattr(
         "app.hunter.get_saved_searches",
-        lambda: [search],
+        lambda user_id: [search],
     )
 
     monkeypatch.setattr(
@@ -374,7 +374,7 @@ async def test_hunter_skips_old_listings(monkeypatch):
 
     monkeypatch.setattr(
         "app.hunter.has_seen_listing",
-        lambda listing: False,
+        lambda user_id, listing: False,
     )
 
     analyze = Mock()
@@ -386,7 +386,7 @@ async def test_hunter_skips_old_listings(monkeypatch):
 
     discord = AsyncMock()
 
-    await run_hunter(discord)
+    await run_hunter(1, discord)
 
     analyze.assert_not_called()
     discord.send_listing_notification.assert_not_awaited()
