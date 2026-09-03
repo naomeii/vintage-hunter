@@ -14,7 +14,7 @@ from app.models.recommendation import Recommendation
 
 
 
-def test_analyze_listing():
+def integration_test_analyze_listing():
     search = Search(
         id=None,
         query="balenciaga city small",

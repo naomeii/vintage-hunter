@@ -416,3 +416,96 @@ def test_search_filters_out_listings_over_max_price(monkeypatch):
     assert len(listings) == 1
     assert listings[0].listing_id == "123"
     assert listings[0].price == 1200
+
+def test_search_pagination_keeps_limit_at_50_on_final_page(monkeypatch):
+    search = Search(
+        id=None,
+        query="balenciaga city small",
+        max_price=None,
+        condition=Condition.ANY,
+    )
+
+    def make_item(item_id):
+        return {
+            "itemId": item_id,
+            "title": f"Balenciaga City {item_id}",
+            "price": {
+                "value": "1000",
+                "currency": "USD",
+            },
+            "itemWebUrl": "https://www.ebay.com/",
+            "image": {
+                "imageUrl": "https://example.com/image.jpg",
+            },
+            "additionalImages": [],
+            "seller": {
+                "username": "seller",
+                "feedbackPercentage": "99.0",
+                "feedbackScore": 1000,
+            },
+            "condition": "USED",
+            "itemCreationDate": "2026-08-18T12:00:00.000Z",
+        }
+
+    # First page has 50 results.
+    first_page = [
+        make_item(str(i))
+        for i in range(50)
+    ]
+
+    # Second page has only 35 results.
+    second_page = [
+        make_item(str(i))
+        for i in range(50, 85)
+    ]
+
+    responses = [
+        Mock(
+            json=Mock(
+                return_value={
+                    "itemSummaries": first_page,
+                    "next": "https://api.ebay.com/next-page",
+                }
+            )
+        ),
+        Mock(
+            json=Mock(
+                return_value={
+                    "itemSummaries": second_page,
+                }
+            )
+        ),
+    ]
+
+    for response in responses:
+        response.raise_for_status.return_value = None
+
+    calls = []
+
+    def fake_get(url, **kwargs):
+        calls.append(kwargs["params"])
+        return responses[len(calls) - 1]
+
+    monkeypatch.setattr(
+        ebay,
+        "get_access_token",
+        lambda: "fake-token",
+    )
+
+    monkeypatch.setattr(
+        ebay.requests,
+        "get",
+        fake_get,
+    )
+
+    listings = ebay.search(search)
+
+    assert len(listings) == 85
+
+    assert len(calls) == 2
+
+    assert calls[0]["limit"] == 50
+    assert calls[0]["offset"] == 0
+
+    assert calls[1]["limit"] == 50
+    assert calls[1]["offset"] == 50

@@ -122,12 +122,7 @@ def _search_ebay(search: Search) -> list[Listing]:
     offset = 0
 
     while len(listings) < MAX_EBAY_RESULTS_PER_HUNT:
-        remaining = MAX_EBAY_RESULTS_PER_HUNT - len(listings)
-
-        limit = min(
-            EBAY_RESULTS_PER_PAGE,
-            remaining,
-        )
+        limit = EBAY_RESULTS_PER_PAGE
 
         params = {
             "q": search.query,
@@ -197,7 +192,7 @@ def _search_ebay(search: Search) -> list[Listing]:
 
         offset += limit
 
-    return listings
+    return listings[:MAX_EBAY_RESULTS_PER_HUNT]
 
 def _normalize_ebay_listing(ebay_json_raw_listing: dict) -> Listing:
     raw_listing = ebay_json_raw_listing
