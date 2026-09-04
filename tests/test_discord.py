@@ -14,7 +14,7 @@ from unittest.mock import AsyncMock, patch
 # verifies notif tried to fetch correct user's Discord ID
 @pytest.mark.asyncio
 async def test_discord_notification():
-    discord_service = DiscordService("123456")
+    discord_service = DiscordService()
 
     discord_service.client.login = AsyncMock()
 
@@ -58,6 +58,7 @@ async def test_discord_notification():
             return_value="3 minutes ago",
         ):
             await discord_service.send_listing_notification(
+                "123456",
                 listing,
                 result,
             )

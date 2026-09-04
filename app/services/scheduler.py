@@ -6,7 +6,7 @@ from app.services.database import get_all_users
 from app.config import HUNTER_INTERVAL_SECONDS
 
 
-async def run_scheduler():
+async def run_scheduler(discord_service: DiscordService):
     while True:
         try:
             print("\n♡ Vintage Hunter is hunting...")
@@ -14,8 +14,6 @@ async def run_scheduler():
             users = get_all_users()
 
             for user in users:
-                discord_service = DiscordService(user["discord_user_id"])
-
                 await run_hunter(user["id"], discord_service)
 
             print(

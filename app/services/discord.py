@@ -8,9 +8,7 @@ from app.services.listing_age import get_listing_age
 
 class DiscordService:
 
-    def __init__(self, discord_user_id: str):
-        self.discord_user_id = discord_user_id
-
+    def __init__(self):
         intents = discord.Intents.default()
 
         self.client = discord.Client(intents=intents)
@@ -28,15 +26,11 @@ class DiscordService:
     async def close(self):
         await self.client.close()
 
-    async def send_message(self, message: str):
-        user = await self.client.fetch_user(self.discord_user_id)
+    async def send_message(self, discord_user_id: str, message: str):
+        user = await self.client.fetch_user(discord_user_id)
         await user.send(message)
 
-    async def send_listing_notification(
-        self,
-        listing: Listing,
-        result: AuthenticityResult,
-    ):
+    async def send_listing_notification(self, discord_user_id: str, listing: Listing, result: AuthenticityResult):
         listing_age = get_listing_age(listing.created_at)
 
         if result.recommendation == Recommendation.BUY:
@@ -116,7 +110,7 @@ class DiscordService:
             )
         )
 
-        user = await self.client.fetch_user(self.discord_user_id)
+        user = await self.client.fetch_user(discord_user_id)
 
         await user.send(
             embed=embed,

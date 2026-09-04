@@ -42,19 +42,11 @@ async def test_scheduler_survives_hunter_failure(monkeypatch):
         ],
     )
 
-    class FakeDiscordService:
-        def __init__(self, discord_user_id):
-            self.discord_user_id = discord_user_id
-
-    monkeypatch.setattr(
-        "app.services.scheduler.DiscordService",
-        FakeDiscordService,
-    )
-
     with pytest.raises(asyncio.CancelledError):
-        await run_scheduler()
+        await run_scheduler("shared_discord_service")
 
     assert calls == 2
+
 
 @pytest.mark.asyncio
 async def test_scheduler_hunts_for_all_users(monkeypatch):
@@ -64,7 +56,7 @@ async def test_scheduler_hunts_for_all_users(monkeypatch):
         calls.append(
             (
                 user_id,
-                discord_service.discord_user_id,
+                discord_service,
             )
         )
 
@@ -90,15 +82,6 @@ async def test_scheduler_hunts_for_all_users(monkeypatch):
         ],
     )
 
-    class FakeDiscordService:
-        def __init__(self, discord_user_id):
-            self.discord_user_id = discord_user_id
-
-    monkeypatch.setattr(
-        "app.services.scheduler.DiscordService",
-        FakeDiscordService,
-    )
-
     async def fake_sleep(seconds):
         return
 
@@ -107,10 +90,12 @@ async def test_scheduler_hunts_for_all_users(monkeypatch):
         fake_sleep,
     )
 
+    shared_discord_service = object()
+
     with pytest.raises(asyncio.CancelledError):
-        await run_scheduler()
+        await run_scheduler(shared_discord_service)
 
     assert calls == [
-        (1, "123456"),
-        (2, "987654"),
+        (1, shared_discord_service),
+        (2, shared_discord_service),
     ]
