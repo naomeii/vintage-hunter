@@ -3,6 +3,7 @@ from app.services.database import (
     get_saved_searches,
     has_seen_listing,
     mark_listing_seen,
+    get_user_by_id,
 )
 from app.services.authenticity import analyze_listing
 from app.services.discord import DiscordService
@@ -11,7 +12,15 @@ from app.config import HUNTER_MAX_LISTING_AGE_MINUTES
 from app.services.listing_age import is_listing_recent
 
 
-async def run_hunter(user_id: int, discord_service: DiscordService,):    
+async def run_hunter(user_id: int, discord_service: DiscordService):    
+    user = get_user_by_id(user_id)
+
+    if user is None:
+        print(f"✕ User {user_id} not found.")
+        return
+
+    discord_user_id = user["discord_user_id"]
+
     searches = get_saved_searches(user_id)
 
     for search in searches:
@@ -51,6 +60,7 @@ async def run_hunter(user_id: int, discord_service: DiscordService,):
 
                 # waiting to send new notifications
                 await discord_service.send_listing_notification(
+                    discord_user_id,
                     listing,
                     result,
                 )

@@ -350,3 +350,13 @@ def test_get_all_users(monkeypatch, tmp_path):
     assert users[0]["discord_user_id"] == "123456"
     assert users[1]["id"] == user_2_id
     assert users[1]["discord_user_id"] == "987654"
+
+def test_get_user_by_id(monkeypatch, tmp_path):
+    setup_test_database(monkeypatch, tmp_path)
+
+    user_id = database.create_user("123456")
+
+    user = database.get_user_by_id(user_id)
+
+    assert user["id"] == user_id
+    assert user["discord_user_id"] == "123456"

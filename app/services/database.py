@@ -87,6 +87,29 @@ def get_user(discord_user_id: str):
             "discord_user_id": row[1],
         }
 
+def get_user_by_id(user_id: int):
+    with sqlite3.connect(DATABASE_PATH) as connection:
+        cursor = connection.cursor()
+
+        cursor.execute(
+            """
+            SELECT id, discord_user_id
+            FROM users
+            WHERE id = ?
+            """,
+            (user_id,),
+        )
+
+        row = cursor.fetchone()
+
+        if row is None:
+            return None
+
+        return {
+            "id": row[0],
+            "discord_user_id": row[1],
+        }
+
 def save_search(search: Search):
     with sqlite3.connect(DATABASE_PATH) as connection:
         cursor = connection.cursor()

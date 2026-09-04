@@ -53,6 +53,14 @@ async def test_run_hunter_success(monkeypatch):
     )
 
     monkeypatch.setattr(
+        "app.hunter.get_user_by_id",
+        lambda user_id: {
+            "id": user_id,
+            "discord_user_id": "123456",
+        },
+    )
+
+    monkeypatch.setattr(
         "app.hunter.get_saved_searches",
         lambda user_id: [search],
     )
@@ -82,6 +90,7 @@ async def test_run_hunter_success(monkeypatch):
     await run_hunter(1, discord)
 
     discord.send_listing_notification.assert_awaited_once_with(
+        "123456",
         listing,
         result,
     )
@@ -96,6 +105,15 @@ async def test_run_hunter_search_failure(monkeypatch):
         max_price=None,
         condition=Condition.ANY,
     )
+
+    monkeypatch.setattr(
+        "app.hunter.get_user_by_id",
+        lambda user_id: {
+            "id": user_id,
+            "discord_user_id": "123456",
+        },
+    )
+    
 
     monkeypatch.setattr(
         "app.hunter.get_saved_searches",
@@ -144,6 +162,14 @@ async def test_run_hunter_continues_after_listing_failure(monkeypatch):
     )
 
     monkeypatch.setattr(
+        "app.hunter.get_user_by_id",
+        lambda user_id: {
+            "id": user_id,
+            "discord_user_id": "123456",
+        },
+    )
+
+    monkeypatch.setattr(
         "app.hunter.get_saved_searches",
         lambda user_id: [search],
     )
@@ -179,6 +205,7 @@ async def test_run_hunter_continues_after_listing_failure(monkeypatch):
     await run_hunter(1, discord)
 
     discord.send_listing_notification.assert_awaited_once_with(
+        "123456",
         listing_2,
         result,
     )
@@ -204,6 +231,14 @@ async def test_run_hunter_does_not_mark_seen_if_discord_fails(
         confidence=0.84,
         recommendation=Recommendation.BUY,
         explanation="Looks authentic.",
+    )
+
+    monkeypatch.setattr(
+        "app.hunter.get_user_by_id",
+        lambda user_id: {
+            "id": user_id,
+            "discord_user_id": "123456",
+        },
     )
 
     monkeypatch.setattr(
@@ -245,6 +280,7 @@ async def test_run_hunter_does_not_mark_seen_if_discord_fails(
 
     # Discord was attempted
     discord.send_listing_notification.assert_awaited_once_with(
+        "123456",
         listing,
         result,
     )
@@ -285,6 +321,14 @@ async def test_run_hunter_processes_multiple_searches(monkeypatch):
         confidence=0.84,
         recommendation=Recommendation.BUY,
         explanation="Looks authentic.",
+    )
+
+    monkeypatch.setattr(
+        "app.hunter.get_user_by_id",
+        lambda user_id: {
+            "id": user_id,
+            "discord_user_id": "123456",
+        },
     )
 
     monkeypatch.setattr(
@@ -360,6 +404,14 @@ async def test_hunter_skips_old_listings(monkeypatch):
             datetime.now(timezone.utc)
             - timedelta(days=2)
         ).isoformat(),
+    )
+
+    monkeypatch.setattr(
+        "app.hunter.get_user_by_id",
+        lambda user_id: {
+            "id": user_id,
+            "discord_user_id": "123456",
+        },
     )
 
     monkeypatch.setattr(
