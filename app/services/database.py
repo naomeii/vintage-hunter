@@ -14,6 +14,7 @@ def initialize_database():
             )
         """)
 
+        # Create the new searches table if it doesn't exist.
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS searches (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -26,16 +27,71 @@ def initialize_database():
             )
         """)
 
-        # Add color to older databases that don't have it yet
         cursor.execute("PRAGMA table_info(searches)")
-        columns = [row[1] for row in cursor.fetchall()]
+        search_columns = [row[1] for row in cursor.fetchall()]
 
-        if "color" not in columns:
+        # Migrate older searches tables that don't have user_id.
+        if "user_id" not in search_columns:
+            cursor.execute(
+                "SELECT id FROM users"
+            )
+            users = cursor.fetchall()
+
+            if len(users) != 1:
+                raise RuntimeError(
+                    "Cannot migrate searches: expected exactly one user."
+                )
+
+            user_id = users[0][0]
+
+            cursor.execute("""
+                CREATE TABLE searches_new (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    query TEXT NOT NULL,
+                    min_price REAL,
+                    max_price REAL,
+                    condition TEXT NOT NULL,
+                    color TEXT
+                )
+            """)
+
+            cursor.execute("""
+                INSERT INTO searches_new (
+                    id,
+                    user_id,
+                    query,
+                    min_price,
+                    max_price,
+                    condition,
+                    color
+                )
+                SELECT
+                    id,
+                    ?,
+                    query,
+                    min_price,
+                    max_price,
+                    condition,
+                    color
+                FROM searches
+            """, (user_id,))
+
+            cursor.execute("DROP TABLE searches")
+            cursor.execute(
+                "ALTER TABLE searches_new RENAME TO searches"
+            )
+
+        # Add columns used by older databases.
+        cursor.execute("PRAGMA table_info(searches)")
+        search_columns = [row[1] for row in cursor.fetchall()]
+
+        if "color" not in search_columns:
             cursor.execute(
                 "ALTER TABLE searches ADD COLUMN color TEXT"
             )
 
-        if "min_price" not in columns:
+        if "min_price" not in search_columns:
             cursor.execute(
                 "ALTER TABLE searches ADD COLUMN min_price REAL"
             )
@@ -48,6 +104,51 @@ def initialize_database():
                 PRIMARY KEY (user_id, platform, listing_id)
             )
         """)
+
+        cursor.execute("PRAGMA table_info(seen_listings)")
+        seen_columns = [row[1] for row in cursor.fetchall()]
+
+        # Migrate older seen_listings tables that don't have user_id.
+        if "user_id" not in seen_columns:
+            cursor.execute(
+                "SELECT id FROM users"
+            )
+            users = cursor.fetchall()
+
+            if len(users) != 1:
+                raise RuntimeError(
+                    "Cannot migrate seen listings: "
+                    "expected exactly one user."
+                )
+
+            user_id = users[0][0]
+
+            cursor.execute("""
+                CREATE TABLE seen_listings_new (
+                    user_id INTEGER NOT NULL,
+                    platform TEXT NOT NULL,
+                    listing_id TEXT NOT NULL,
+                    PRIMARY KEY (user_id, platform, listing_id)
+                )
+            """)
+
+            cursor.execute("""
+                INSERT INTO seen_listings_new (
+                    user_id,
+                    platform,
+                    listing_id
+                )
+                SELECT
+                    ?,
+                    platform,
+                    listing_id
+                FROM seen_listings
+            """, (user_id,))
+
+            cursor.execute("DROP TABLE seen_listings")
+            cursor.execute(
+                "ALTER TABLE seen_listings_new RENAME TO seen_listings"
+            )
 
 def create_user(discord_user_id: str) -> int:
     with sqlite3.connect(DATABASE_PATH) as connection:

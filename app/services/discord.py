@@ -1,5 +1,6 @@
 # used to expose methods like send_listing_notification()
 import discord
+from discord import app_commands
 
 from app.config import DISCORD_BOT_TOKEN
 from app.models.listing import Listing
@@ -12,10 +13,13 @@ class DiscordService:
         intents = discord.Intents.default()
 
         self.client = discord.Client(intents=intents)
+        self.tree = app_commands.CommandTree(self.client)
 
         @self.client.event
         async def on_ready():
             print(f"Logged in as {self.client.user}!")
+            await self.tree.sync()
+            print("♡ Discord commands synced.")
 
     async def login(self):
         await self.client.login(DISCORD_BOT_TOKEN)

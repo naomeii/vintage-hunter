@@ -360,3 +360,106 @@ def test_get_user_by_id(monkeypatch, tmp_path):
 
     assert user["id"] == user_id
     assert user["discord_user_id"] == "123456"
+
+# migration regression test
+def test_initialize_database_migrates_old_database(
+    monkeypatch,
+    tmp_path,
+):
+    test_database_path = tmp_path / "old.db"
+
+    monkeypatch.setattr(
+        database,
+        "DATABASE_PATH",
+        test_database_path,
+    )
+
+    with sqlite3.connect(test_database_path) as connection:
+        cursor = connection.cursor()
+
+        cursor.execute("""
+            CREATE TABLE users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                discord_user_id TEXT NOT NULL UNIQUE
+            )
+        """)
+
+        cursor.execute("""
+            INSERT INTO users (discord_user_id)
+            VALUES ('123456')
+        """)
+
+        cursor.execute("""
+            CREATE TABLE searches (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                query TEXT NOT NULL,
+                max_price REAL,
+                condition TEXT NOT NULL,
+                color TEXT,
+                min_price REAL
+            )
+        """)
+
+        cursor.execute("""
+            INSERT INTO searches (
+                query,
+                max_price,
+                condition,
+                color,
+                min_price
+            )
+            VALUES (
+                'balenciaga city small',
+                1500,
+                'any',
+                'Black',
+                500
+            )
+        """)
+
+        cursor.execute("""
+            CREATE TABLE seen_listings (
+                platform TEXT NOT NULL,
+                listing_id TEXT NOT NULL,
+                PRIMARY KEY (platform, listing_id)
+            )
+        """)
+
+        cursor.execute("""
+            INSERT INTO seen_listings (
+                platform,
+                listing_id
+            )
+            VALUES (
+                'ebay',
+                '123'
+            )
+        """)
+
+    database.initialize_database()
+
+    searches = database.get_saved_searches(1)
+
+    assert len(searches) == 1
+    assert searches[0].user_id == 1
+    assert searches[0].query == "balenciaga city small"
+    assert searches[0].min_price == 500
+    assert searches[0].max_price == 1500
+    assert searches[0].color == "Black"
+
+    listing = Listing(
+        platform="ebay",
+        listing_id="123",
+        title="Balenciaga City",
+        price=1000,
+        currency="USD",
+        listing_url="https://ebay.com/123",
+        thumbnail_image_url=None,
+        additional_image_urls=[],
+        seller_username="seller",
+        seller_feedback_percent=100,
+        seller_feedback_score=100,
+        condition="USED",
+    )
+
+    assert database.has_seen_listing(1, listing)

@@ -3,6 +3,7 @@ import asyncio
 from app.services.database import initialize_database
 from app.services.discord import DiscordService
 from app.services.scheduler import run_scheduler
+from app.bot.commands import CommandService
 
 
 async def main():
@@ -12,12 +13,13 @@ async def main():
 
     discord_service = DiscordService()
 
-    await discord_service.login()
+    command_service = CommandService(discord_service)
+    command_service.register_commands()
 
-    try:
-        await run_scheduler(discord_service)
-    finally:
-        await discord_service.close()
+    await asyncio.gather(
+        discord_service.start(),
+        run_scheduler(discord_service),
+    )
 
 
 asyncio.run(main())
