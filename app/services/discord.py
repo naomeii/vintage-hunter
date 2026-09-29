@@ -18,8 +18,13 @@ class DiscordService:
         @self.client.event
         async def on_ready():
             print(f"Logged in as {self.client.user}!")
-            await self.tree.sync()
+
+            synced_commands = await self.tree.sync()
+
             print("♡ Discord commands synced.")
+
+            for command in synced_commands:
+                print(f"♡ Registered command: /{command.name}")
 
     async def login(self):
         await self.client.login(DISCORD_BOT_TOKEN)

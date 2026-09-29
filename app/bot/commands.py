@@ -1,11 +1,111 @@
 import discord
 from discord import app_commands
 
+from app.models.search import Search, Condition
 from app.services.database import (
     create_user,
     get_user,
+    save_search,
+    search_exists,
 )
 from app.hunter import run_hunter
+
+
+class AddSearchModal(discord.ui.Modal, title="Add Vintage Hunter Search"):
+
+    query = discord.ui.TextInput(
+        label="Search query",
+        placeholder="e.g. balenciaga city small",
+        required=True,
+        max_length=100,
+    )
+
+    min_price = discord.ui.TextInput(
+        label="Minimum price",
+        placeholder="e.g. 500",
+        required=False,
+        max_length=20,
+    )
+
+    max_price = discord.ui.TextInput(
+        label="Maximum price",
+        placeholder="e.g. 1500",
+        required=False,
+        max_length=20,
+    )
+
+    color = discord.ui.TextInput(
+        label="Color",
+        placeholder="e.g. Black",
+        required=False,
+        max_length=50,
+    )
+
+    async def on_submit(self, interaction: discord.Interaction):
+
+        discord_user_id = str(interaction.user.id)
+
+        user = get_user(discord_user_id)
+
+        if user is None:
+            user_id = create_user(discord_user_id)
+        else:
+            user_id = user["id"]
+
+        try:
+            min_price = (
+                float(self.min_price.value)
+                if self.min_price.value
+                else None
+            )
+
+            max_price = (
+                float(self.max_price.value)
+                if self.max_price.value
+                else None
+            )
+
+        except ValueError:
+            await interaction.response.send_message(
+                "✕ Prices must be numbers.",
+                ephemeral=True,
+            )
+            return
+
+        if (
+            min_price is not None
+            and max_price is not None
+            and min_price > max_price
+        ):
+            await interaction.response.send_message(
+                "✕ Minimum price cannot be greater than maximum price.",
+                ephemeral=True,
+            )
+            return
+
+        search = Search(
+            id=None,
+            user_id=user_id,
+            query=self.query.value,
+            condition=Condition.ANY,
+            min_price=min_price,
+            max_price=max_price,
+            color=self.color.value or None,
+        )
+
+        if search_exists(search):
+            await interaction.response.send_message(
+                "♡ You already have this search saved.",
+                ephemeral=True,
+            )
+            return
+
+        save_search(search)
+
+        await interaction.response.send_message(
+            "♡ Search added!",
+            ephemeral=True,
+        )
 
 
 class CommandService:
@@ -37,4 +137,14 @@ class CommandService:
             await run_hunter(
                 user["id"],
                 self.discord_service,
+            )
+
+        @self.discord_service.tree.command(
+            name="add",
+            description="Add a Vintage Hunter search.",
+        )
+        async def add(interaction: discord.Interaction):
+
+            await interaction.response.send_modal(
+                AddSearchModal()
             )
