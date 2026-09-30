@@ -11,6 +11,61 @@ from app.services.database import (
 from app.hunter import run_hunter
 
 
+class ConditionSelect(discord.ui.Select):
+
+    def __init__(self, search: Search):
+        self.search = search
+
+        options = [
+            discord.SelectOption(
+                label="Any",
+                value="any",
+                description="New or used",
+            ),
+            discord.SelectOption(
+                label="New",
+                value="new",
+                description="New items only",
+            ),
+            discord.SelectOption(
+                label="Used",
+                value="used",
+                description="Used items only",
+            ),
+        ]
+
+        super().__init__(
+            placeholder="Choose a condition",
+            options=options,
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+
+        self.search.condition = Condition(self.values[0])
+
+        if search_exists(self.search):
+            await interaction.response.send_message(
+                "♡ You already have this search saved.",
+                ephemeral=True,
+            )
+            return
+
+        save_search(self.search)
+
+        await interaction.response.send_message(
+            "♡ Search added!",
+            ephemeral=True,
+        )
+
+class ConditionView(discord.ui.View):
+
+    def __init__(self, search: Search):
+        super().__init__(timeout=60)
+
+        self.add_item(
+            ConditionSelect(search)
+        )
+
 class AddSearchModal(discord.ui.Modal, title="Add Vintage Hunter Search"):
 
     query = discord.ui.TextInput(
@@ -93,17 +148,9 @@ class AddSearchModal(discord.ui.Modal, title="Add Vintage Hunter Search"):
             color=self.color.value or None,
         )
 
-        if search_exists(search):
-            await interaction.response.send_message(
-                "♡ You already have this search saved.",
-                ephemeral=True,
-            )
-            return
-
-        save_search(search)
-
         await interaction.response.send_message(
-            "♡ Search added!",
+            "♡ One more thing — choose a condition:",
+            view=ConditionView(search),
             ephemeral=True,
         )
 
