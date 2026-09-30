@@ -8,6 +8,7 @@ from app.services.database import (
     get_saved_searches,
     save_search,
     search_exists,
+    delete_search
 )
 from app.hunter import run_hunter
 
@@ -155,6 +156,57 @@ class AddSearchModal(discord.ui.Modal, title="Add Vintage Hunter Search"):
             ephemeral=True,
         )
 
+class RemoveSearchSelect(discord.ui.Select):
+
+    def __init__(self, searches):
+        self.searches = searches
+
+        options = []
+
+        for search in searches:
+            options.append(
+                discord.SelectOption(
+                    label=f"#{search.id} • {search.query}",
+                    description=f"{search.condition.value.title()} • {search.color or 'Any color'}",
+                    value=str(search.id),
+                )
+            )
+
+        super().__init__(
+            placeholder="Choose a search to remove",
+            options=options,
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+
+        search_id = int(self.values[0])
+
+        user = get_user(str(interaction.user.id))
+
+        if user is None:
+            await interaction.response.send_message(
+                "♡ You don't have any saved searches.",
+                ephemeral=True,
+            )
+            return
+
+        delete_search(search_id, user["id"])
+
+        await interaction.response.send_message(
+            "♡ Search removed!",
+            ephemeral=True,
+        )
+
+
+class RemoveSearchView(discord.ui.View):
+
+    def __init__(self, searches):
+        super().__init__(timeout=60)
+
+        self.add_item(
+            RemoveSearchSelect(searches)
+        )
+
 
 class CommandService:
 
@@ -251,5 +303,39 @@ class CommandService:
             await interaction.response.send_message(
                 "♡ **Your saved searches**\n\n"
                 + "\n\n".join(lines),
+                ephemeral=True,
+            )
+
+
+        @self.discord_service.tree.command(
+            name="remove",
+            description="Remove a saved Vintage Hunter search.",
+        )
+            
+        async def remove(interaction: discord.Interaction):
+
+            discord_user_id = str(interaction.user.id)
+
+            user = get_user(discord_user_id)
+
+            if user is None:
+                await interaction.response.send_message(
+                    "♡ You don't have any saved searches.",
+                    ephemeral=True,
+                )
+                return
+
+            saved_searches = get_saved_searches(user["id"])
+
+            if not saved_searches:
+                await interaction.response.send_message(
+                    "♡ You don't have any saved searches.",
+                    ephemeral=True,
+                )
+                return
+
+            await interaction.response.send_message(
+                "♡ Choose a search to remove:",
+                view=RemoveSearchView(saved_searches),
                 ephemeral=True,
             )
