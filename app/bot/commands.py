@@ -5,6 +5,7 @@ from app.models.search import Search, Condition
 from app.services.database import (
     create_user,
     get_user,
+    get_saved_searches,
     save_search,
     search_exists,
 )
@@ -194,4 +195,61 @@ class CommandService:
 
             await interaction.response.send_modal(
                 AddSearchModal()
+            )
+
+        @self.discord_service.tree.command(
+            name="searches",
+            description="View your saved Vintage Hunter searches.",
+        )
+        async def searches(interaction: discord.Interaction):
+
+            discord_user_id = str(interaction.user.id)
+
+            user = get_user(discord_user_id)
+
+            if user is None:
+                await interaction.response.send_message(
+                    "♡ You don't have any saved searches yet.",
+                    ephemeral=True,
+                )
+                return
+
+            saved_searches = get_saved_searches(user["id"])
+
+            if not saved_searches:
+                await interaction.response.send_message(
+                    "♡ You don't have any saved searches yet.",
+                    ephemeral=True,
+                )
+                return
+
+            lines = []
+
+            for search in saved_searches:
+                price_range = ""
+
+                if search.min_price is not None:
+                    price_range += f"${search.min_price:,.0f}"
+
+                if search.max_price is not None:
+                    if price_range:
+                        price_range += "–"
+                    price_range += f"${search.max_price:,.0f}"
+
+                if not price_range:
+                    price_range = "Any price"
+
+                color = search.color or "Any color"
+
+                lines.append(
+                    f"**#{search.id} • {search.query}**\n"
+                    f"♡ {price_range} • "
+                    f"{search.condition.value.title()} • "
+                    f"{color}"
+                )
+
+            await interaction.response.send_message(
+                "♡ **Your saved searches**\n\n"
+                + "\n\n".join(lines),
+                ephemeral=True,
             )
